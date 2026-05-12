@@ -1,0 +1,29 @@
+{
+  "name": "chatcta-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.18.0",
+    "react-scripts": "5.0.1",
+    "axios": "^1.6.2",
+    "i18next": "^23.6.0",
+    "react-i18next": "^13.3.1",
+    "i18next-browser-languagedetector": "^7.1.0",
+    "socket.io-client": "^4.6.1",
+    "react-hot-toast": "^2.4.1",
+    "lucide-react": "^0.292.0",
+    "recharts": "^2.9.3",
+    "react-quill": "^2.0.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+  },
+  "proxy": "http://backend:5000"
+}
