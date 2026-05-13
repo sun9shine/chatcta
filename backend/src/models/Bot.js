@@ -20,6 +20,8 @@ const botSchema = new mongoose.Schema({
     type: { type: String, enum: ['comment', 'dm', 'reaction', 'tag'], default: 'comment' },
     message: { type: String },
     imageUrl: { type: String },
+    linkUrl: { type: String }, // optional link to include in message
+    linkText: { type: String }, // optional link display text
     delay: { type: Number, default: 0 }, // seconds
     language: { type: String, enum: ['ar', 'en', 'both'], default: 'both' }
   }],

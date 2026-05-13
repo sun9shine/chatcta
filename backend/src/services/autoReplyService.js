@@ -99,6 +99,12 @@ class AutoReplyService {
           content = await this.getAIResponse(bot.aiPrompt, commentData.content);
         }
 
+        // Append link if provided
+        if (action.linkUrl) {
+          const linkLabel = action.linkText || action.linkUrl;
+          content = content ? `${content}\n\n${linkLabel}\n${action.linkUrl}` : action.linkUrl;
+        }
+
         const delay = (action.delay || 0) * 1000;
         await new Promise(r => setTimeout(r, delay));
 

@@ -188,8 +188,22 @@ export default function BotBuilder() {
               <div>
                 <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>{isAr ? 'نص الرسالة' : 'Message Text'}</label>
                 <textarea className="input" rows={3} value={action.message} onChange={e => { const a = [...bot.actions]; a[i].message = e.target.value; setBot({ ...bot, actions: a }); }} placeholder={isAr ? 'نص الرد التلقائي...' : 'Auto reply text...'} style={{ marginBottom: 8 }} />
-                <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>{isAr ? 'رابط صورة (اختياري)' : 'Image URL (optional)'}</label>
-                <input className="input" value={action.imageUrl || ''} onChange={e => { const a = [...bot.actions]; a[i].imageUrl = e.target.value; setBot({ ...bot, actions: a }); }} placeholder="https://..." />
+                <div className="grid grid-2" style={{ marginBottom: 8 }}>
+                  <div>
+                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>{isAr ? 'رابط صورة (اختياري)' : 'Image URL (optional)'}</label>
+                    <input className="input" value={action.imageUrl || ''} onChange={e => { const a = [...bot.actions]; a[i].imageUrl = e.target.value; setBot({ ...bot, actions: a }); }} placeholder="https://image..." />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>🔗 {isAr ? 'رابط (اختياري)' : 'Link URL (optional)'}</label>
+                    <input className="input" value={action.linkUrl || ''} onChange={e => { const a = [...bot.actions]; a[i].linkUrl = e.target.value; setBot({ ...bot, actions: a }); }} placeholder="https://your-link.com" />
+                  </div>
+                </div>
+                {action.linkUrl && (
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>{isAr ? 'نص الرابط (اختياري)' : 'Link Text (optional)'}</label>
+                    <input className="input" value={action.linkText || ''} onChange={e => { const a = [...bot.actions]; a[i].linkText = e.target.value; setBot({ ...bot, actions: a }); }} placeholder={isAr ? 'اضغط هنا للمزيد' : 'Click here for more'} />
+                  </div>
+                )}
               </div>
             )}
           </div>
