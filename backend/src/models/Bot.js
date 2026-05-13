@@ -18,12 +18,25 @@ const botSchema = new mongoose.Schema({
   allPosts: { type: Boolean, default: false },
   actions: [{
     type: { type: String, enum: ['comment', 'dm', 'reaction', 'tag'], default: 'comment' },
-    message: { type: String },
+    // ── single reply (legacy / DM / reaction) ──────────────
+    message:  { type: String },
     imageUrl: { type: String },
-    linkUrl: { type: String }, // optional link to include in message
-    linkText: { type: String }, // optional link display text
-    delay: { type: Number, default: 0 }, // seconds
-    language: { type: String, enum: ['ar', 'en', 'both'], default: 'both' }
+    linkUrl:  { type: String },
+    linkText: { type: String },
+    delay:    { type: Number, default: 0 }, // seconds (used when replies array is empty)
+    language: { type: String, enum: ['ar', 'en', 'both'], default: 'both' },
+    // ── multiple comment replies ────────────────────────────
+    // Each entry is one reply sent in sequence with its own delay
+    replies: [{
+      message:        { type: String, default: '' },
+      imageUrl:       { type: String, default: '' },
+      linkUrl:        { type: String, default: '' },
+      linkText:       { type: String, default: '' },
+      delayEnabled:   { type: Boolean, default: false }, // toggle for delay
+      delay:          { type: Number,  default: 0 },     // seconds (used only when delayEnabled=true)
+      isEnabled:      { type: Boolean, default: true },  // can disable individual reply without deleting
+      order:          { type: Number,  default: 0 }
+    }]
   }],
   stats: {
     totalReplies: { type: Number, default: 0 },

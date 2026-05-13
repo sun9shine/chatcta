@@ -29,8 +29,55 @@ export default function BotBuilder() {
 
   const addTrigger = () => setBot(prev => ({ ...prev, triggers: [...prev.triggers, { keyword: '', matchType: 'contains', caseSensitive: false }] }));
   const removeTrigger = (i) => setBot(prev => ({ ...prev, triggers: prev.triggers.filter((_, idx) => idx !== i) }));
-  const addAction = () => setBot(prev => ({ ...prev, actions: [...prev.actions, { type: 'comment', message: '', imageUrl: '', delay: 0, language: 'both' }] }));
+
+  // ── Action helpers ──────────────────────────────────────────────────────
+  const addAction = () => setBot(prev => ({
+    ...prev,
+    actions: [...prev.actions, {
+      type: 'comment', message: '', imageUrl: '', linkUrl: '', linkText: '',
+      delay: 0, language: 'both',
+      replies: []
+    }]
+  }));
   const removeAction = (i) => setBot(prev => ({ ...prev, actions: prev.actions.filter((_, idx) => idx !== i) }));
+  const updateAction = (i, patch) => setBot(prev => {
+    const a = [...prev.actions];
+    a[i] = { ...a[i], ...patch };
+    return { ...prev, actions: a };
+  });
+
+  // ── Reply helpers (inside an action) ───────────────────────────────────
+  const addReply = (actionIdx) => setBot(prev => {
+    const a = [...prev.actions];
+    const replies = [...(a[actionIdx].replies || [])];
+    replies.push({ message: '', imageUrl: '', linkUrl: '', linkText: '', delay: 0, delayEnabled: false, isEnabled: true, order: replies.length });
+    a[actionIdx] = { ...a[actionIdx], replies };
+    return { ...prev, actions: a };
+  });
+  const removeReply = (actionIdx, replyIdx) => setBot(prev => {
+    const a = [...prev.actions];
+    const replies = a[actionIdx].replies.filter((_, idx) => idx !== replyIdx)
+      .map((r, idx) => ({ ...r, order: idx }));
+    a[actionIdx] = { ...a[actionIdx], replies };
+    return { ...prev, actions: a };
+  });
+  const updateReply = (actionIdx, replyIdx, patch) => setBot(prev => {
+    const a = [...prev.actions];
+    const replies = [...a[actionIdx].replies];
+    replies[replyIdx] = { ...replies[replyIdx], ...patch };
+    a[actionIdx] = { ...a[actionIdx], replies };
+    return { ...prev, actions: a };
+  });
+  const moveReply = (actionIdx, replyIdx, dir) => setBot(prev => {
+    const a = [...prev.actions];
+    const replies = [...a[actionIdx].replies];
+    const target = replyIdx + dir;
+    if (target < 0 || target >= replies.length) return prev;
+    [replies[replyIdx], replies[target]] = [replies[target], replies[replyIdx]];
+    replies.forEach((r, idx) => r.order = idx);
+    a[actionIdx] = { ...a[actionIdx], replies };
+    return { ...prev, actions: a };
+  });
 
   const handleSave = async () => {
     if (!bot.name) return toast.error(isAr ? 'أدخل اسم البوت' : 'Enter bot name');
@@ -161,51 +208,279 @@ export default function BotBuilder() {
       {/* Actions */}
       <div className="card" style={{ marginBottom: 20 }}>
         <div className="flex-between" style={{ marginBottom: 16 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600 }}>⚡ {isAr ? 'الإجراءات' : 'Actions'}</h3>
-          <button onClick={addAction} className="btn btn-sm btn-outline">+ {isAr ? 'إضافة إجراء' : 'Add Action'}</button>
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 600 }}>⚡ {isAr ? 'الإجراءات' : 'Actions'}</h3>
+            <p style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
+              {isAr
+                ? 'يمكنك إضافة عدة إجراءات. كل إجراء من نوع "تعليق" يدعم ردوداً متعددة متسلسلة.'
+                : 'Add multiple actions. Each "Comment" action supports multiple sequential replies.'}
+            </p>
+          </div>
+          <button onClick={addAction} className="btn btn-sm btn-primary">
+            + {isAr ? 'إضافة إجراء' : 'Add Action'}
+          </button>
         </div>
-        {bot.actions.map((action, i) => (
-          <div key={i} style={{ background: '#0f172a', borderRadius: 12, padding: 16, marginBottom: 12 }}>
-            <div className="flex-between" style={{ marginBottom: 12 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#818cf8' }}>{isAr ? `إجراء ${i + 1}` : `Action ${i + 1}`}</span>
-              {bot.actions.length > 1 && <button onClick={() => removeAction(i)} style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>✕</button>}
+
+        {bot.actions.map((action, ai) => (
+          <div key={ai} style={{ background: '#0f172a', borderRadius: 14, padding: 18, marginBottom: 16, border: '1px solid #334155' }}>
+            {/* Action header */}
+            <div className="flex-between" style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', borderRadius: 8, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>
+                  {isAr ? `إجراء ${ai + 1}` : `Action ${ai + 1}`}
+                </span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>
+                  {action.type === 'comment' ? '💬' : action.type === 'dm' ? '📩' : '👍'}
+                  {' '}
+                  {action.type === 'comment'
+                    ? (isAr ? 'تعليق' : 'Comment')
+                    : action.type === 'dm'
+                    ? (isAr ? 'رسالة خاصة' : 'Direct Message')
+                    : (isAr ? 'تفاعل' : 'Reaction')}
+                </span>
+              </div>
+              {bot.actions.length > 1 && (
+                <button onClick={() => removeAction(ai)}
+                  style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontSize: 12 }}>
+                  {isAr ? 'حذف الإجراء' : 'Remove'}
+                </button>
+              )}
             </div>
-            <div className="grid grid-2" style={{ marginBottom: 10 }}>
+
+            {/* Action type + language */}
+            <div className="grid grid-2" style={{ marginBottom: 14 }}>
               <div>
-                <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>{isAr ? 'نوع الإجراء' : 'Action Type'}</label>
-                <select className="input" value={action.type} onChange={e => { const a = [...bot.actions]; a[i].type = e.target.value; setBot({ ...bot, actions: a }); }}>
-                  <option value="comment">{isAr ? 'تعليق' : 'Comment'}</option>
-                  <option value="dm">{isAr ? 'رسالة مباشرة' : 'Direct Message'}</option>
+                <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                  {isAr ? 'نوع الإجراء' : 'Action Type'}
+                </label>
+                <select className="input" value={action.type}
+                  onChange={e => updateAction(ai, { type: e.target.value })}>
+                  <option value="comment">{isAr ? 'تعليق (رد على التعليق)' : 'Comment Reply'}</option>
+                  <option value="dm">{isAr ? 'رسالة مباشرة (DM)' : 'Direct Message (DM)'}</option>
                   <option value="reaction">{isAr ? 'تفاعل' : 'Reaction'}</option>
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>{isAr ? 'التأخير (ثانية)' : 'Delay (seconds)'}</label>
-                <input className="input" type="number" min="0" value={action.delay} onChange={e => { const a = [...bot.actions]; a[i].delay = Number(e.target.value); setBot({ ...bot, actions: a }); }} />
+                <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                  {isAr ? 'اللغة' : 'Language'}
+                </label>
+                <select className="input" value={action.language || 'both'}
+                  onChange={e => updateAction(ai, { language: e.target.value })}>
+                  <option value="both">{isAr ? 'عربي وإنجليزي' : 'Arabic & English'}</option>
+                  <option value="ar">{isAr ? 'عربي فقط' : 'Arabic only'}</option>
+                  <option value="en">{isAr ? 'إنجليزي فقط' : 'English only'}</option>
+                </select>
               </div>
             </div>
-            {!bot.useAI && (
+
+            {/* ═══════════════════════════════════════════════════════
+                COMMENT action → multi-reply mode
+                DM / other    → single message (legacy)
+            ════════════════════════════════════════════════════════ */}
+            {action.type === 'comment' && !bot.useAI ? (
               <div>
-                <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>{isAr ? 'نص الرسالة' : 'Message Text'}</label>
-                <textarea className="input" rows={3} value={action.message} onChange={e => { const a = [...bot.actions]; a[i].message = e.target.value; setBot({ ...bot, actions: a }); }} placeholder={isAr ? 'نص الرد التلقائي...' : 'Auto reply text...'} style={{ marginBottom: 8 }} />
-                <div className="grid grid-2" style={{ marginBottom: 8 }}>
+                {/* Replies list */}
+                {(action.replies || []).length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '24px 0', color: '#475569', fontSize: 13, borderRadius: 10, border: '1px dashed #334155', marginBottom: 12 }}>
+                    <p style={{ fontSize: 28, marginBottom: 6 }}>💬</p>
+                    <p>{isAr ? 'لا توجد ردود بعد — أضف رداً أو أكثر أدناه' : 'No replies yet — add one or more below'}</p>
+                  </div>
+                )}
+
+                {(action.replies || []).map((reply, ri) => (
+                  <div key={ri} style={{
+                    background: '#1e293b', borderRadius: 12, padding: 14, marginBottom: 10,
+                    border: reply.isEnabled ? '1px solid #334155' : '1px solid rgba(239,68,68,0.25)',
+                    opacity: reply.isEnabled ? 1 : 0.55,
+                    transition: 'all 0.2s'
+                  }}>
+                    {/* Reply header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {/* Order arrows */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <button onClick={() => moveReply(ai, ri, -1)} disabled={ri === 0}
+                            style={{ background: 'none', border: 'none', color: ri === 0 ? '#334155' : '#6366f1', cursor: ri === 0 ? 'default' : 'pointer', fontSize: 14, lineHeight: 1, padding: 0 }}>▲</button>
+                          <button onClick={() => moveReply(ai, ri, 1)} disabled={ri === (action.replies.length - 1)}
+                            style={{ background: 'none', border: 'none', color: ri === (action.replies.length - 1) ? '#334155' : '#6366f1', cursor: ri === (action.replies.length - 1) ? 'default' : 'pointer', fontSize: 14, lineHeight: 1, padding: 0 }}>▼</button>
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#818cf8' }}>
+                          {isAr ? `رد ${ri + 1}` : `Reply ${ri + 1}`}
+                        </span>
+                        {/* Enable/Disable toggle */}
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+                          <label className="switch" style={{ width: 36, height: 20 }}>
+                            <input type="checkbox" checked={reply.isEnabled !== false}
+                              onChange={e => updateReply(ai, ri, { isEnabled: e.target.checked })} />
+                            <span className="slider" style={{ borderRadius: 20 }}></span>
+                          </label>
+                          <span style={{ fontSize: 11, color: reply.isEnabled !== false ? '#10b981' : '#ef4444' }}>
+                            {reply.isEnabled !== false
+                              ? (isAr ? 'مفعّل' : 'Enabled')
+                              : (isAr ? 'معطّل' : 'Disabled')}
+                          </span>
+                        </label>
+                      </div>
+                      <button onClick={() => removeReply(ai, ri)}
+                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>✕</button>
+                    </div>
+
+                    {/* Reply message */}
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                        {isAr ? 'نص الرد' : 'Reply Text'}
+                      </label>
+                      <textarea className="input" rows={2} value={reply.message || ''}
+                        onChange={e => updateReply(ai, ri, { message: e.target.value })}
+                        placeholder={isAr ? `نص الرد ${ri + 1}...` : `Reply ${ri + 1} text...`} />
+                    </div>
+
+                    {/* Image + Link */}
+                    <div className="grid grid-2" style={{ marginBottom: 10 }}>
+                      <div>
+                        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                          🖼️ {isAr ? 'رابط صورة (اختياري)' : 'Image URL (optional)'}
+                        </label>
+                        <input className="input" value={reply.imageUrl || ''}
+                          onChange={e => updateReply(ai, ri, { imageUrl: e.target.value })}
+                          placeholder="https://..." />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                          🔗 {isAr ? 'رابط (اختياري)' : 'Link URL (optional)'}
+                        </label>
+                        <input className="input" value={reply.linkUrl || ''}
+                          onChange={e => updateReply(ai, ri, { linkUrl: e.target.value })}
+                          placeholder="https://your-link.com" />
+                      </div>
+                    </div>
+                    {reply.linkUrl && (
+                      <div style={{ marginBottom: 10 }}>
+                        <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                          {isAr ? 'نص الرابط' : 'Link text'}
+                        </label>
+                        <input className="input" value={reply.linkText || ''}
+                          onChange={e => updateReply(ai, ri, { linkText: e.target.value })}
+                          placeholder={isAr ? 'اضغط هنا' : 'Click here'} />
+                      </div>
+                    )}
+
+                    {/* ── Delay (optional toggle) ───────────────── */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#0f172a', borderRadius: 8, padding: '8px 12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 }}>
+                        <label className="switch" style={{ width: 36, height: 20 }}>
+                          <input type="checkbox" checked={!!reply.delayEnabled}
+                            onChange={e => updateReply(ai, ri, { delayEnabled: e.target.checked, delay: e.target.checked ? (reply.delay || 5) : 0 })} />
+                          <span className="slider" style={{ borderRadius: 20 }}></span>
+                        </label>
+                        <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                          ⏱️ {isAr ? 'تأخير' : 'Delay'}
+                        </span>
+                      </label>
+                      {reply.delayEnabled && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                          <input type="range" min="1" max="300" step="1"
+                            value={reply.delay || 5}
+                            onChange={e => updateReply(ai, ri, { delay: Number(e.target.value) })}
+                            style={{ flex: 1, accentColor: '#6366f1' }} />
+                          <span style={{ fontSize: 12, color: '#818cf8', fontWeight: 700, minWidth: 52, textAlign: 'center' }}>
+                            {reply.delay || 5}{isAr ? ' ثانية' : 's'}
+                          </span>
+                        </div>
+                      )}
+                      {!reply.delayEnabled && (
+                        <span style={{ fontSize: 11, color: '#475569' }}>
+                          {isAr ? 'الإرسال فوري' : 'Sent immediately'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add reply button */}
+                <button onClick={() => addReply(ai)}
+                  style={{ width: '100%', background: 'rgba(99,102,241,0.08)', border: '1px dashed rgba(99,102,241,0.4)', color: '#818cf8', borderRadius: 10, padding: '10px 0', cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 18 }}>+</span>
+                  {isAr ? 'إضافة رد آخر على هذا التعليق' : 'Add another reply to this comment'}
+                </button>
+              </div>
+            ) : action.type !== 'comment' && !bot.useAI ? (
+              /* DM / legacy single message */
+              <div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                    {isAr ? 'نص الرسالة' : 'Message Text'}
+                  </label>
+                  <textarea className="input" rows={3} value={action.message || ''}
+                    onChange={e => updateAction(ai, { message: e.target.value })}
+                    placeholder={isAr ? 'نص الرسالة التلقائية...' : 'Auto reply text...'} />
+                </div>
+                <div className="grid grid-2" style={{ marginBottom: 10 }}>
                   <div>
-                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>{isAr ? 'رابط صورة (اختياري)' : 'Image URL (optional)'}</label>
-                    <input className="input" value={action.imageUrl || ''} onChange={e => { const a = [...bot.actions]; a[i].imageUrl = e.target.value; setBot({ ...bot, actions: a }); }} placeholder="https://image..." />
+                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                      🖼️ {isAr ? 'رابط صورة (اختياري)' : 'Image URL (optional)'}
+                    </label>
+                    <input className="input" value={action.imageUrl || ''}
+                      onChange={e => updateAction(ai, { imageUrl: e.target.value })}
+                      placeholder="https://image..." />
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>🔗 {isAr ? 'رابط (اختياري)' : 'Link URL (optional)'}</label>
-                    <input className="input" value={action.linkUrl || ''} onChange={e => { const a = [...bot.actions]; a[i].linkUrl = e.target.value; setBot({ ...bot, actions: a }); }} placeholder="https://your-link.com" />
+                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                      🔗 {isAr ? 'رابط (اختياري)' : 'Link URL (optional)'}
+                    </label>
+                    <input className="input" value={action.linkUrl || ''}
+                      onChange={e => updateAction(ai, { linkUrl: e.target.value })}
+                      placeholder="https://your-link.com" />
                   </div>
                 </div>
                 {action.linkUrl && (
-                  <div style={{ marginBottom: 8 }}>
-                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>{isAr ? 'نص الرابط (اختياري)' : 'Link Text (optional)'}</label>
-                    <input className="input" value={action.linkText || ''} onChange={e => { const a = [...bot.actions]; a[i].linkText = e.target.value; setBot({ ...bot, actions: a }); }} placeholder={isAr ? 'اضغط هنا للمزيد' : 'Click here for more'} />
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 4 }}>
+                      {isAr ? 'نص الرابط (اختياري)' : 'Link Text (optional)'}
+                    </label>
+                    <input className="input" value={action.linkText || ''}
+                      onChange={e => updateAction(ai, { linkText: e.target.value })}
+                      placeholder={isAr ? 'اضغط هنا للمزيد' : 'Click here for more'} />
                   </div>
                 )}
+                {/* Delay toggle for DM */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#0f172a', borderRadius: 8, padding: '8px 12px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', flexShrink: 0 }}>
+                    <label className="switch" style={{ width: 36, height: 20 }}>
+                      <input type="checkbox" checked={(action.delay || 0) > 0}
+                        onChange={e => updateAction(ai, { delay: e.target.checked ? 5 : 0 })} />
+                      <span className="slider" style={{ borderRadius: 20 }}></span>
+                    </label>
+                    <span style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                      ⏱️ {isAr ? 'تأخير' : 'Delay'}
+                    </span>
+                  </label>
+                  {(action.delay || 0) > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+                      <input type="range" min="1" max="300" step="1"
+                        value={action.delay || 5}
+                        onChange={e => updateAction(ai, { delay: Number(e.target.value) })}
+                        style={{ flex: 1, accentColor: '#6366f1' }} />
+                      <span style={{ fontSize: 12, color: '#818cf8', fontWeight: 700, minWidth: 52, textAlign: 'center' }}>
+                        {action.delay || 5}{isAr ? ' ثانية' : 's'}
+                      </span>
+                    </div>
+                  )}
+                  {(action.delay || 0) === 0 && (
+                    <span style={{ fontSize: 11, color: '#475569' }}>
+                      {isAr ? 'الإرسال فوري' : 'Sent immediately'}
+                    </span>
+                  )}
+                </div>
               </div>
-            )}
+            ) : bot.useAI ? (
+              /* AI mode info card */
+              <div style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#a78bfa' }}>
+                🧠 {isAr
+                  ? 'سيتولى الذكاء الاصطناعي صياغة الرد بناءً على التعليمات أعلاه.'
+                  : 'AI will generate the reply based on your system prompt above.'}
+              </div>
+            ) : null}
           </div>
         ))}
       </div>

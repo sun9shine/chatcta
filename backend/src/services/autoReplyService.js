@@ -92,37 +92,80 @@ class AutoReplyService {
       }
 
       for (const action of bot.actions) {
-        let content = action.message;
+        // ── Build the replies list to send ─────────────────────────────────
+        // If action has a replies array (new multi-reply mode), use it.
+        // Otherwise fall back to the legacy single message.
+        let repliesToSend = [];
 
-        // AI response
-        if (bot.useAI && bot.aiPrompt) {
-          content = await this.getAIResponse(bot.aiPrompt, commentData.content);
+        if (action.replies && action.replies.length > 0) {
+          // Only send enabled replies, sorted by order
+          repliesToSend = action.replies
+            .filter(r => r.isEnabled !== false)
+            .sort((a, b) => (a.order || 0) - (b.order || 0));
+        } else {
+          // Legacy mode: single reply built from action fields
+          repliesToSend = [{
+            message:      action.message,
+            imageUrl:     action.imageUrl,
+            linkUrl:      action.linkUrl,
+            linkText:     action.linkText,
+            delay:        action.delay || 0,
+            delayEnabled: (action.delay || 0) > 0,
+            isEnabled:    true
+          }];
         }
 
-        // Append link if provided
-        if (action.linkUrl) {
-          const linkLabel = action.linkText || action.linkUrl;
-          content = content ? `${content}\n\n${linkLabel}\n${action.linkUrl}` : action.linkUrl;
-        }
+        // ── Send each reply in sequence ────────────────────────────────────
+        for (const reply of repliesToSend) {
+          let content = reply.message || '';
 
-        const delay = (action.delay || 0) * 1000;
-        await new Promise(r => setTimeout(r, delay));
+          // AI response (only on first reply if AI is enabled)
+          if (bot.useAI && bot.aiPrompt && !content) {
+            content = await this.getAIResponse(bot.aiPrompt, commentData.content);
+          }
 
-        if (action.type === 'comment') {
-          await this.replyToComment(pageDoc, commentData.commentId, content);
-          await Comment.findOneAndUpdate(
-            { commentId: commentData.commentId },
-            { 'reply.sent': true, 'reply.content': content, 'reply.sentAt': new Date(), 'reply.botId': bot._id }
-          );
-        } else if (action.type === 'dm') {
-          await this.sendMessage(pageDoc, commentData.senderId, content, action.imageUrl);
-          await Message.create({
-            userId: pageDoc.userId, pageId: pageDoc._id, platform: pageDoc.platform,
-            type: 'outgoing', recipientId: commentData.senderId, content,
-            imageUrl: action.imageUrl, isAutoReply: true, botId: bot._id, status: 'sent', sentAt: new Date()
-          });
-        }
-      }
+          // Append link if provided
+          if (reply.linkUrl) {
+            const linkLabel = reply.linkText || reply.linkUrl;
+            content = content
+              ? `${content}\n\n${linkLabel}\n${reply.linkUrl}`
+              : `${linkLabel}\n${reply.linkUrl}`;
+          }
+
+          // Apply delay only when delayEnabled = true
+          if (reply.delayEnabled && reply.delay > 0) {
+            await new Promise(r => setTimeout(r, reply.delay * 1000));
+          }
+
+          if (action.type === 'comment') {
+            await this.replyToComment(pageDoc, commentData.commentId, content);
+            await Comment.findOneAndUpdate(
+              { commentId: commentData.commentId },
+              {
+                'reply.sent':   true,
+                'reply.content': content,
+                'reply.sentAt': new Date(),
+                'reply.botId':  bot._id
+              }
+            );
+          } else if (action.type === 'dm') {
+            await this.sendMessage(pageDoc, commentData.senderId, content, reply.imageUrl);
+            await Message.create({
+              userId:      pageDoc.userId,
+              pageId:      pageDoc._id,
+              platform:    pageDoc.platform,
+              type:        'outgoing',
+              recipientId: commentData.senderId,
+              content,
+              imageUrl:    reply.imageUrl,
+              isAutoReply: true,
+              botId:       bot._id,
+              status:      'sent',
+              sentAt:      new Date()
+            });
+          }
+        } // end replies loop
+      } // end actions loop
 
       // Update bot stats
       bot.stats.totalReplies += 1; bot.stats.lastRun = new Date();
