@@ -2,20 +2,18 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install OS dependencies needed for some npm packages
+RUN apk add --no-cache python3 make g++ libc6-compat
+
 # Install dependencies first (better layer caching)
 COPY package*.json ./
-RUN npm install --production
+RUN npm install --production --no-optional 2>&1
 
 # Copy source
 COPY . .
 
 # Create uploads directory
 RUN mkdir -p uploads
-
-# Non-root user for security
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-RUN chown -R nodejs:nodejs /app
-USER nodejs
 
 EXPOSE 5000
 
