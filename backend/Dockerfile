@@ -2,14 +2,13 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install OS dependencies needed for some npm packages
-RUN apk add --no-cache python3 make g++ libc6-compat
-
-# Install dependencies first (better layer caching)
+# Copy package files first (better layer caching)
 COPY package*.json ./
-RUN npm install --production --no-optional 2>&1
 
-# Copy source
+# Install dependencies — no native modules, no build tools needed
+RUN npm install --production --no-optional --ignore-scripts
+
+# Copy source code
 COPY . .
 
 # Create uploads directory
