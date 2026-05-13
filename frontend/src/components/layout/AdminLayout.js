@@ -6,12 +6,15 @@ import { useAuth } from '../../store/authStore';
 const adminNav = [
   { to: '/admin', label: 'dashboard', icon: '📊', exact: true },
   { to: '/admin/users', label: 'users', icon: '👥' },
+  { to: '/admin/subscriptions', labelAr: 'الاشتراكات', labelEn: 'Subscriptions', icon: '💎' },
   { to: '/admin/platforms', label: 'platforms', icon: '🔌' },
   { to: '/admin/smtp', label: 'smtp', icon: '📧' },
   { to: '/admin/announcements', label: 'announcements', icon: '📢' },
+  { to: '/admin/notifications', labelAr: 'الإشعارات', labelEn: 'Notifications', icon: '🔔' },
   { to: '/admin/privacy', label: 'privacy', icon: '🔒' },
   { to: '/admin/publish', label: 'publish', icon: '📤' },
   { to: '/admin/support', label: 'support', icon: '🎧' },
+  { to: '/admin/templates', labelAr: 'القوالب', labelEn: 'Templates', icon: '📋' },
   { to: '/admin/data-export', label: 'dataExport', icon: '📁' },
   { to: '/admin/credentials', label: 'settings', icon: '⚙️' },
 ];
@@ -44,15 +47,18 @@ export default function AdminLayout() {
           </button>
         </div>
         <nav style={{ flex: 1, padding: '12px 10px', overflow: 'auto' }}>
-          {adminNav.map(item => (
-            <NavLink key={item.to} to={item.to} end={item.exact}
-              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-              style={{ justifyContent: open ? 'flex-start' : 'center', marginBottom: 4 }}
-              title={!open ? t(item.label) : ''}>
-              <span style={{ fontSize: 18 }}>{item.icon}</span>
-              {open && <span>{t(item.label)}</span>}
-            </NavLink>
-          ))}
+          {adminNav.map(item => {
+            const label = item.label ? t(item.label) : (isAr ? item.labelAr : item.labelEn);
+            return (
+              <NavLink key={item.to} to={item.to} end={item.exact}
+                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                style={{ justifyContent: open ? 'flex-start' : 'center', marginBottom: 2 }}
+                title={!open ? label : ''}>
+                <span style={{ fontSize: 16 }}>{item.icon}</span>
+                {open && <span style={{ fontSize: 13 }}>{label}</span>}
+              </NavLink>
+            );
+          })}
         </nav>
         <div style={{ padding: '12px 10px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <button onClick={() => navigate('/dashboard')} className="sidebar-link" style={{ width: '100%', background: 'none', border: 'none', justifyContent: open ? 'flex-start' : 'center', marginBottom: 4 }}>

@@ -16,10 +16,12 @@ export default function AdminDashboard() {
 
   const cards = [
     { label: isAr ? 'إجمالي المستخدمين' : 'Total Users', value: stats.users || 0, icon: '👥', color: '#6366f1' },
+    { label: isAr ? 'خطة Pro' : 'Pro Users', value: stats.proUsers || 0, icon: '⚡', color: '#818cf8' },
+    { label: isAr ? 'خطة Enterprise' : 'Enterprise', value: stats.enterpriseUsers || 0, icon: '🏆', color: '#f59e0b' },
     { label: isAr ? 'إجمالي الصفحات' : 'Total Pages', value: stats.pages || 0, icon: '🔗', color: '#8b5cf6' },
     { label: isAr ? 'إجمالي البوتات' : 'Total Bots', value: stats.bots || 0, icon: '🤖', color: '#06b6d4' },
     { label: isAr ? 'إجمالي الرسائل' : 'Total Messages', value: stats.messages || 0, icon: '💬', color: '#10b981' },
-    { label: isAr ? 'إجمالي التعليقات' : 'Total Comments', value: stats.comments || 0, icon: '🗨️', color: '#f59e0b' },
+    { label: isAr ? 'إجمالي التعليقات' : 'Total Comments', value: stats.comments || 0, icon: '🗨️', color: '#ef4444' },
   ];
 
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>...</div>;
@@ -30,8 +32,7 @@ export default function AdminDashboard() {
         <h1>{isAr ? 'لوحة تحكم الأدمن' : 'Admin Dashboard'}</h1>
         <p style={{ color: '#64748b' }}>{isAr ? 'نظرة شاملة على المنصة' : 'Complete platform overview'}</p>
       </div>
-      <div className="grid grid-4" style={{ marginBottom: 24 }}>
-        {cards.map((c, i) => (
+      <div className="grid grid-4" style={{ marginBottom: 24 }}>        {cards.map((c, i) => (
           <div key={i} className="stat-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>

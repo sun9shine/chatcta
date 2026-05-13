@@ -15,6 +15,11 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
   lastLogin: { type: Date },
+  // Subscription shortcut (cached)
+  plan: { type: String, enum: ['free', 'pro', 'enterprise'], default: 'free' },
+  planExpiresAt: { type: Date },
+  // Team: owner or member
+  teamOwnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // if this user is a team member
   connectedPlatforms: [{
     platform: { type: String, enum: ['facebook', 'instagram', 'whatsapp', 'telegram', 'tiktok'] },
     accessToken: { type: String },

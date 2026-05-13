@@ -206,8 +206,20 @@ const resources = {
       updateProfile: 'Update Profile',
       changePassword: 'Change Password',
       deleteAccount: 'Delete Account',
-      privacyPolicy: 'Privacy Policy',
-      lastUpdated: 'Last Updated',
+      // New features
+      subscription: 'Subscription',
+      scheduledPosts: 'Scheduled Posts',
+      abTests: 'A/B Tests',
+      templates: 'Templates',
+      team: 'Team',
+      conversions: 'Conversions',
+      analytics: 'Analytics',
+      upgrade: 'Upgrade',
+      currentPlan: 'Current Plan',
+      freePlan: 'Free',
+      proPlan: 'Pro',
+      enterprisePlan: 'Enterprise',
+      upgradeByAdmin: 'Upgraded by Admin',
     }
   }
 };

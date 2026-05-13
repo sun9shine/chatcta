@@ -18,6 +18,8 @@ export default function AdminUsers() {
   const [banReason, setBanReason] = useState('');
   const [msgContent, setMsgContent] = useState('');
   const [msgModal, setMsgModal] = useState(null);
+  const [upgradeModal, setUpgradeModal] = useState(null);
+  const [upgradePlan, setUpgradePlan] = useState('pro');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -54,6 +56,15 @@ export default function AdminUsers() {
       toast.success(isAr ? 'تم إرسال الرسالة' : 'Message sent');
       setMsgModal(null); setMsgContent('');
     } catch { toast.error(isAr ? 'فشل الإرسال' : 'Failed'); }
+  };
+
+  const handleUpgrade = async () => {
+    try {
+      await axios.put(`${API}/admin/users/${upgradeModal._id}/upgrade`, { plan: upgradePlan });
+      toast.success(isAr ? `تم ترقية ${upgradeModal.name} إلى ${upgradePlan}` : `${upgradeModal.name} upgraded to ${upgradePlan}`);
+      setUpgradeModal(null);
+      fetchUsers();
+    } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
   };
 
   return (
@@ -101,10 +112,16 @@ export default function AdminUsers() {
                     {u.isBanned
                       ? <span className="badge badge-danger">{isAr ? 'محظور' : 'Banned'}</span>
                       : <span className="badge badge-success">{isAr ? 'نشط' : 'Active'}</span>}
+                    {u.plan && u.plan !== 'free' && (
+                      <span className="badge" style={{ background:'rgba(99,102,241,0.15)', color:'#818cf8', marginTop:4, display:'block', width:'fit-content' }}>
+                        {u.plan === 'pro' ? '⚡ Pro' : '🏆 Enterprise'}
+                      </span>
+                    )}
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       <button onClick={() => setMsgModal(u._id)} className="btn btn-sm btn-outline" title={isAr ? 'مراسلة' : 'Message'}>✉️</button>
+                      <button onClick={() => { setUpgradeModal(u); setUpgradePlan(u.plan === 'enterprise' ? 'pro' : 'enterprise'); }} className="btn btn-sm" style={{ background:'rgba(99,102,241,0.1)', color:'#818cf8', border:'none' }} title={isAr?'ترقية':'Upgrade'}>💎</button>
                       {u.isBanned
                         ? <button onClick={() => handleUnban(u._id)} className="btn btn-sm btn-success">{isAr ? 'رفع الحظر' : 'Unban'}</button>
                         : <button onClick={() => setSelected(u._id)} className="btn btn-sm btn-outline" style={{ color: '#f59e0b', borderColor: '#f59e0b40' }}>{isAr ? 'حظر' : 'Ban'}</button>}
@@ -150,6 +167,38 @@ export default function AdminUsers() {
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setMsgModal(null)} className="btn btn-outline">{isAr ? 'إلغاء' : 'Cancel'}</button>
               <button onClick={() => handleSendMsg(msgModal)} className="btn btn-primary">{isAr ? 'إرسال' : 'Send'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upgrade Modal */}
+      {upgradeModal && (
+        <div className="modal-overlay" onClick={() => setUpgradeModal(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div style={{ textAlign:'center', marginBottom:20 }}>
+              <p style={{ fontSize:36, marginBottom:8 }}>💎</p>
+              <h3 style={{ fontSize:16, fontWeight:700 }}>{isAr?`ترقية ${upgradeModal.name}`:`Upgrade ${upgradeModal.name}`}</h3>
+              <p style={{ fontSize:12, color:'#64748b', marginTop:4 }}>{upgradeModal.email}</p>
+              <div style={{ background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:10, padding:'8px 12px', marginTop:12, fontSize:12, color:'#10b981' }}>
+                ✅ {isAr?'الترقية مجانية - بدون دفع':'FREE upgrade - no payment needed'}
+              </div>
+            </div>
+            <div className="grid grid-3" style={{ gap:8, marginBottom:20 }}>
+              {['free','pro','enterprise'].map(p => (
+                <div key={p} onClick={() => setUpgradePlan(p)} style={{
+                  padding:'12px 8px', borderRadius:10, textAlign:'center', cursor:'pointer',
+                  border:`2px solid ${upgradePlan===p ? (p==='free'?'#64748b':p==='pro'?'#6366f1':'#f59e0b') : '#334155'}`,
+                  background: upgradePlan===p ? 'rgba(99,102,241,0.1)' : 'transparent'
+                }}>
+                  <div style={{ fontSize:20 }}>{p==='free'?'🆓':p==='pro'?'⚡':'🏆'}</div>
+                  <div style={{ fontSize:12, fontWeight:700, marginTop:4, color:p==='free'?'#64748b':p==='pro'?'#6366f1':'#f59e0b' }}>{p}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setUpgradeModal(null)} className="btn btn-outline">{isAr ? 'إلغاء' : 'Cancel'}</button>
+              <button onClick={handleUpgrade} className="btn btn-primary">{isAr?`ترقية إلى ${upgradePlan}`:`Upgrade to ${upgradePlan}`}</button>
             </div>
           </div>
         </div>

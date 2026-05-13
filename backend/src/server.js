@@ -5,8 +5,10 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const http = require('http');
 const { Server } = require('socket.io');
+const cron = require('node-cron');
 const connectDB = require('./utils/db');
 const { initAdminAccount } = require('./utils/initAdmin');
+const { initTemplates } = require('./utils/initTemplates');
 
 const app = express();
 const server = http.createServer(app);
@@ -29,7 +31,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {});
 });
 
-// Routes
+// ─── Routes ───────────────────────────────────────────
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
@@ -43,37 +45,86 @@ app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/privacy', require('./routes/privacy'));
 app.use('/api/support', require('./routes/support'));
 app.use('/api/analytics', require('./routes/analytics'));
+// New features
+app.use('/api/subscriptions', require('./routes/subscriptions'));
+app.use('/api/scheduled', require('./routes/scheduled'));
+app.use('/api/abtests', require('./routes/abtests'));
+app.use('/api/templates', require('./routes/templates'));
+app.use('/api/team', require('./routes/team'));
+app.use('/api/conversions', require('./routes/conversions'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/translate', require('./routes/translate'));
 
-// Webhooks
+// ─── Webhooks ─────────────────────────────────────────
 app.use('/webhook/facebook', require('./webhooks/facebook'));
 app.use('/webhook/instagram', require('./webhooks/instagram'));
 app.use('/webhook/whatsapp', require('./webhooks/whatsapp'));
 app.use('/webhook/telegram', require('./webhooks/telegram'));
 app.use('/webhook/tiktok', require('./webhooks/tiktok'));
 
-// Upload endpoint (for admin publish)
+// ─── Upload endpoint ──────────────────────────────────
 const upload = require('./middleware/upload');
 const { auth, adminOnly } = require('./middleware/auth');
-app.post('/api/upload', auth, adminOnly, upload.single('image'), (req, res) => {
+app.post('/api/upload', auth, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file' });
   res.json({ url: `/uploads/${req.file.filename}` });
 });
 
-// Health check
-app.get('/health', (req, res) => res.json({ status: 'ok', version: '1.0.0' }));
+// ─── Conversion tracking pixel ────────────────────────
+app.get('/track/:trackingId', async (req, res) => {
+  // 1x1 transparent GIF
+  const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+  res.set('Content-Type', 'image/gif');
+  res.set('Cache-Control', 'no-store');
+  res.send(pixel);
+  // Record conversion asynchronously
+  try {
+    const Conversion = require('./models/Conversion');
+    await Conversion.findOneAndUpdate(
+      { trackingId: req.params.trackingId },
+      { eventType: 'link_click' },
+      { new: false }
+    );
+  } catch (e) {}
+});
 
-// Error handler
+// ─── Health check ─────────────────────────────────────
+app.get('/health', (req, res) => res.json({ status: 'ok', version: '2.0.0' }));
+
+// ─── Error handler ────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
+// ─── Scheduled Jobs ───────────────────────────────────
+const runScheduledPosts = require('./utils/scheduler');
+
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(async () => {
   await initAdminAccount();
+  await initTemplates();
+
+  // Run scheduled posts every minute
+  cron.schedule('* * * * *', () => {
+    runScheduledPosts().catch(console.error);
+  });
+
+  // Reset monthly usage on 1st of each month
+  cron.schedule('0 0 1 * *', async () => {
+    try {
+      const Subscription = require('./models/Subscription');
+      await Subscription.updateMany({}, {
+        'usageThisMonth.messages': 0,
+        'usageThisMonth.resetAt': new Date(Date.now() + 30 * 24 * 3600 * 1000)
+      });
+      console.log('✅ Monthly usage reset');
+    } catch (e) { console.error('Monthly reset error:', e.message); }
+  });
+
   server.listen(PORT, () => {
-    console.log(`🚀 ChatCTA Backend running on port ${PORT}`);
+    console.log(`🚀 ChatCTA v2.0 Backend running on port ${PORT}`);
   });
 }).catch(err => {
   console.error('DB connection failed:', err);

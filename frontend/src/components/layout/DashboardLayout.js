@@ -7,8 +7,15 @@ const navItems = [
   { to: '/dashboard', label: 'dashboard', icon: '🏠', exact: true },
   { to: '/dashboard/pages', label: 'connectedPages', icon: '🔗' },
   { to: '/dashboard/bots', label: 'bots', icon: '🤖' },
+  { to: '/dashboard/templates', labelAr: 'قوالب', labelEn: 'Templates', icon: '📋' },
   { to: '/dashboard/message-flow', label: 'messageFlow', icon: '💬' },
   { to: '/dashboard/comment-flow', label: 'commentFlow', icon: '🗨️' },
+  { to: '/dashboard/scheduled', labelAr: 'جدولة المنشورات', labelEn: 'Scheduled', icon: '📅' },
+  { to: '/dashboard/analytics', labelAr: 'الإحصائيات', labelEn: 'Analytics', icon: '📊' },
+  { to: '/dashboard/ab-tests', labelAr: 'A/B اختبار', labelEn: 'A/B Tests', icon: '⚡' },
+  { to: '/dashboard/conversions', labelAr: 'التحويلات', labelEn: 'Conversions', icon: '🎯' },
+  { to: '/dashboard/team', labelAr: 'الفريق', labelEn: 'Team', icon: '👥' },
+  { to: '/dashboard/subscription', labelAr: 'الاشتراك', labelEn: 'Subscription', icon: '💎' },
   { to: '/dashboard/support', label: 'support', icon: '🎧' },
   { to: '/dashboard/profile', label: 'profile', icon: '👤' },
 ];
@@ -51,19 +58,22 @@ export default function DashboardLayout() {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '12px 10px', overflow: 'auto' }}>
-          {navItems.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.exact}
-              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-              style={{ justifyContent: sidebarOpen ? 'flex-start' : 'center', marginBottom: 4 }}
-              title={!sidebarOpen ? t(item.label) : ''}
-            >
-              <span style={{ fontSize: 18 }}>{item.icon}</span>
-              {sidebarOpen && <span>{t(item.label)}</span>}
-            </NavLink>
-          ))}
+          {navItems.map(item => {
+            const label = item.label ? t(item.label) : (isAr ? item.labelAr : item.labelEn);
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.exact}
+                className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+                style={{ justifyContent: sidebarOpen ? 'flex-start' : 'center', marginBottom: 2 }}
+                title={!sidebarOpen ? label : ''}
+              >
+                <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
+                {sidebarOpen && <span style={{ fontSize: 13 }}>{label}</span>}
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* Bottom */}
