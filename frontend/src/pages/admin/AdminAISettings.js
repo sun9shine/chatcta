@@ -288,7 +288,7 @@ export default function AdminAISettings() {
             <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
               <button onClick={()=>setShowAdd(false)} className="btn btn-outline">{isAr?'إلغاء':'Cancel'}</button>
               <button onClick={handleSave} className="btn btn-primary" disabled={saving}>
-                {saving?'⏳':(editId?(isAr?'💾 تحديث':'💾 Update'):(isAr?'➕ إضافة':'➕ Add')))}
+                {saving?'⏳':(editId?(isAr?'💾 تحديث':'💾 Update'):(isAr?'➕ إضافة':'➕ Add'))}
               </button>
             </div>
           </div>
