@@ -15,6 +15,7 @@ const adminNav = [
   { to: '/admin/publish', label: 'publish', icon: '📤' },
   { to: '/admin/support', label: 'support', icon: '🎧' },
   { to: '/admin/templates', labelAr: 'القوالب', labelEn: 'Templates', icon: '📋' },
+  { to: '/admin/ai-settings', labelAr: 'إعدادات الذكاء الاصطناعي', labelEn: 'AI Settings', icon: '🧠' },
   { to: '/admin/data-export', label: 'dataExport', icon: '📁' },
   { to: '/admin/credentials', label: 'settings', icon: '⚙️' },
 ];

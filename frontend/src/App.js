@@ -32,7 +32,7 @@ import Templates from './pages/user/Templates';
 import Team from './pages/user/Team';
 import Conversions from './pages/user/Conversions';
 import Subscription from './pages/user/Subscription';
-import AISettings from './pages/user/AISettings';
+import AISettings from './pages/admin/AdminAISettings';
 
 // Admin Layout
 import AdminLayout from './components/layout/AdminLayout';
@@ -96,7 +96,6 @@ const AppRoutes = () => {
         <Route path="team" element={<Team />} />
         <Route path="conversions" element={<Conversions />} />
         <Route path="subscription" element={<Subscription />} />
-        <Route path="ai-settings" element={<AISettings />} />
         <Route path="support" element={<Support />} />
         <Route path="profile" element={<Profile />} />
         <Route path="delete-account" element={<DeleteAccount />} />
@@ -116,6 +115,7 @@ const AppRoutes = () => {
         <Route path="support" element={<AdminSupport />} />
         <Route path="data-export" element={<AdminDataExport />} />
         <Route path="templates" element={<AdminTemplates />} />
+        <Route path="ai-settings" element={<AISettings />} />
         <Route path="credentials" element={<AdminCredentials />} />
       </Route>
 

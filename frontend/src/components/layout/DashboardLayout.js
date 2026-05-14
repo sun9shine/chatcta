@@ -16,7 +16,7 @@ const navItems = [
   { to: '/dashboard/conversions',  labelAr: 'التحويلات',                labelEn: 'Conversions',   icon: '🎯' },
   { to: '/dashboard/team',         labelAr: 'الفريق',                   labelEn: 'Team',          icon: '👥' },
   { to: '/dashboard/subscription', labelAr: 'الاشتراك',                 labelEn: 'Subscription',  icon: '💎' },
-  { to: '/dashboard/ai-settings',  labelAr: 'إعدادات الذكاء الاصطناعي', labelEn: 'AI Settings',  icon: '🧠' },
+
   { to: '/dashboard/support',      label: 'support',        icon: '🎧' },
   { to: '/dashboard/profile',      label: 'profile',        icon: '👤' },
 ];
