@@ -8,13 +8,14 @@ ENV CI=false
 ENV GENERATE_SOURCEMAP=false
 ENV DISABLE_ESLINT_PLUGIN=true
 ENV ESLINT_NO_DEV_ERRORS=true
-ENV TSC_COMPILE_ON_ERROR=true
+ENV NODE_OPTIONS=--openssl-legacy-provider
 
-COPY package*.json ./
-RUN npm install --legacy-peer-deps 2>&1
+COPY package.json ./
+RUN npm install --legacy-peer-deps 2>&1 && \
+    echo "Dependencies installed successfully"
 
 COPY . .
-RUN npm run build 2>&1 || (echo "Build failed, retrying without lint..." && CI=false npx react-scripts build)
+RUN npm run build && echo "Build successful"
 
 # Production stage
 FROM nginx:alpine
