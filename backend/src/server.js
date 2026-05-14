@@ -54,6 +54,8 @@ app.use('/api/team', require('./routes/team'));
 app.use('/api/conversions', require('./routes/conversions'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/translate', require('./routes/translate'));
+app.use('/api/posts', require('./routes/posts'));
+app.use('/api/ai-settings', require('./routes/aiSettings'));
 
 // ─── Webhooks ─────────────────────────────────────────
 app.use('/webhook/facebook', require('./webhooks/facebook'));
