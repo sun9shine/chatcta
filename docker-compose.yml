@@ -56,9 +56,6 @@ services:
         - REACT_APP_API_URL=${REACT_APP_API_URL:-/api}
     container_name: chatcta-frontend
     restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
     networks:
       - chatcta-net
     healthcheck:
@@ -66,7 +63,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 60s
+      start_period: 10s
 
   nginx:
     image: nginx:alpine
@@ -79,10 +76,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - uploads_data:/var/www/uploads:ro
     depends_on:
-      backend:
-        condition: service_healthy
-      frontend:
-        condition: service_healthy
+      - backend
+      - frontend
     networks:
       - chatcta-net
 

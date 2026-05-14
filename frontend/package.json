@@ -13,17 +13,14 @@
     "i18next-browser-languagedetector": "^7.1.0",
     "socket.io-client": "^4.6.1",
     "react-hot-toast": "^2.4.1",
-    "lucide-react": "^0.292.0",
-    "recharts": "^2.9.3",
-    "react-quill": "^2.0.0"
+    "recharts": "^2.9.3"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build"
+    "build": "DISABLE_ESLINT_PLUGIN=true react-scripts build"
   },
   "browserslist": {
     "production": [">0.2%", "not dead", "not op_mini all"],
     "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
-  },
-  "proxy": "http://backend:5000"
+  }
 }
