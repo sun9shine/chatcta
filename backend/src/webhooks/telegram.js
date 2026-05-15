@@ -3,24 +3,34 @@ const Page = require('../models/Page');
 const Message = require('../models/Message');
 const AutoReplyService = require('../services/autoReplyService');
 
-// GET /webhook/telegram — health check / verification
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /webhook/telegram — Health check
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
-  res.json({ status: 'ok', platform: 'telegram', webhook: 'active' });
+  console.log('[Telegram Webhook GET] /');
+  res.status(200).json({ status: 'ok', platform: 'telegram', webhook: 'active' });
 });
 
-// GET /webhook/telegram/:token — verify webhook is set
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /webhook/telegram/:token — Verify endpoint is ready for this bot
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/:token', (req, res) => {
-  res.json({ status: 'ok', platform: 'telegram', webhook: 'active', message: 'Webhook endpoint ready. Use POST to send updates.' });
+  console.log('[Telegram Webhook GET] /:token →', req.params.token?.slice(0, 10) + '...');
+  res.status(200).json({ status: 'ok', platform: 'telegram', webhook: 'active', message: 'POST updates to this URL' });
 });
 
-// POST /webhook/telegram/:token — receive updates from Telegram
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /webhook/telegram/:token — Receive updates from Telegram Bot API
+// ─────────────────────────────────────────────────────────────────────────────
 router.post('/:token', async (req, res) => {
   res.sendStatus(200);
   try {
     const { token } = req.params;
     const update = req.body;
+    console.log('[Telegram Webhook POST] update_id:', update.update_id, '| token:', token?.slice(0, 10) + '...');
+
     const page = await Page.findOne({ accessToken: token, platform: 'telegram', isActive: true });
-    if (!page) return;
+    if (!page) { console.log('[Telegram Webhook POST] Page not found for token'); return; }
 
     const msg = update.message || update.channel_post;
     if (msg) {
@@ -38,7 +48,7 @@ router.post('/:token', async (req, res) => {
       });
     }
   } catch (err) {
-    console.error('Telegram Webhook Error:', err.message);
+    console.error('[Telegram Webhook POST] Error:', err.message);
   }
 });
 
