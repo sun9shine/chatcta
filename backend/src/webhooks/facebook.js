@@ -4,26 +4,55 @@ const Comment = require('../models/Comment');
 const Message = require('../models/Message');
 const AutoReplyService = require('../services/autoReplyService');
 
-// Webhook verification
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /webhook/facebook — Meta Webhook Verification
+// Meta sends: ?hub.mode=subscribe&hub.verify_token=xxx&hub.challenge=yyy
+// Must return challenge as plain text with status 200
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/', (req, res) => {
-  const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': token } = req.query;
-  if (mode === 'subscribe' && token === (process.env.FB_VERIFY_TOKEN || 'chatcta_verify_2024')) {
-    return res.send(challenge);
+  const mode      = req.query['hub.mode'];
+  const token     = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  const VERIFY_TOKEN = process.env.FB_VERIFY_TOKEN || process.env.FACEBOOK_VERIFY_TOKEN || 'chatcta_verify_2024';
+
+  console.log('[FB Webhook GET] mode:', mode);
+  console.log('[FB Webhook GET] incoming token:', token);
+  console.log('[FB Webhook GET] expected token:', VERIFY_TOKEN);
+  console.log('[FB Webhook GET] challenge:', challenge);
+
+  if (!mode || !token) {
+    console.log('[FB Webhook GET] ❌ Missing mode or token → 400');
+    return res.status(400).send('Missing hub.mode or hub.verify_token');
   }
-  res.sendStatus(403);
+
+  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('[FB Webhook GET] ✅ Verification SUCCESS');
+    return res.status(200).send(challenge);
+  }
+
+  console.log('[FB Webhook GET] ❌ Token mismatch → 403');
+  return res.status(403).send('Forbidden: verify_token mismatch');
 });
 
-// Webhook events
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /webhook/facebook — Receive events from Meta
+// Must respond with 200 immediately, then process asynchronously
+// ─────────────────────────────────────────────────────────────────────────────
 router.post('/', async (req, res) => {
-  res.sendStatus(200); // Respond immediately
+  // IMPORTANT: respond immediately with 200 (Meta requires < 5 seconds)
+  res.sendStatus(200);
+
   try {
     const body = req.body;
+    console.log('[FB Webhook POST] object:', body.object, '| entries:', body.entry?.length || 0);
+
     if (body.object !== 'page') return;
 
     for (const entry of body.entry || []) {
       const pageId = entry.id;
-      const page = await Page.findOne({ pageId, platform: 'facebook', isActive: true }).populate('userId');
-      if (!page) continue;
+      const page = await Page.findOne({ pageId, platform: 'facebook', isActive: true });
+      if (!page) { console.log('[FB Webhook POST] Page not found:', pageId); continue; }
 
       // Handle messages
       for (const event of entry.messaging || []) {
@@ -40,7 +69,6 @@ router.post('/', async (req, res) => {
           });
           if (global.io) global.io.to(page.userId.toString()).emit('new_message', msgDoc);
 
-          // Auto-reply bot
           await AutoReplyService.processComment(page, {
             senderId: event.sender.id,
             content: event.message.text,
@@ -52,7 +80,7 @@ router.post('/', async (req, res) => {
 
       // Handle comments/feed
       for (const change of entry.changes || []) {
-        if (change.field === 'feed' && change.value.item === 'comment') {
+        if (change.field === 'feed' && change.value?.item === 'comment') {
           const v = change.value;
           const commentDoc = await Comment.findOneAndUpdate(
             { commentId: v.comment_id },
@@ -82,7 +110,7 @@ router.post('/', async (req, res) => {
       }
     }
   } catch (err) {
-    console.error('FB Webhook Error:', err.message);
+    console.error('[FB Webhook POST] Error:', err.message);
   }
 });
 

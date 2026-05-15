@@ -141,8 +141,9 @@ connectDB().then(async () => {
     } catch (e) { console.error('Monthly reset error:', e.message); }
   });
 
-  server.listen(PORT, () => {
-    console.log(`🚀 ChatCTA v2.0 Backend running on port ${PORT}`);
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 ChatCTA v2.0 Backend running on 0.0.0.0:${PORT}`);
+    console.log(`📡 Webhooks ready at /webhook/facebook, /webhook/instagram, /webhook/whatsapp, /webhook/telegram, /webhook/tiktok`);
   });
 }).catch(err => {
   console.error('DB connection failed:', err);
