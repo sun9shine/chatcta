@@ -64,6 +64,22 @@ app.use('/webhook/whatsapp', require('./webhooks/whatsapp'));
 app.use('/webhook/telegram', require('./webhooks/telegram'));
 app.use('/webhook/tiktok', require('./webhooks/tiktok'));
 
+// GET /webhook — root health check (confirms webhooks are active)
+app.get('/webhook', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'ChatCTA Webhook Server Active',
+    endpoints: {
+      facebook:  '/webhook/facebook',
+      instagram: '/webhook/instagram',
+      whatsapp:  '/webhook/whatsapp',
+      telegram:  '/webhook/telegram/:botToken',
+      tiktok:    '/webhook/tiktok'
+    },
+    note: 'GET = verification, POST = receive events'
+  });
+});
+
 // ─── Upload endpoint ──────────────────────────────────
 const upload = require('./middleware/upload');
 const { auth, adminOnly } = require('./middleware/auth');

@@ -3,7 +3,17 @@ const Page = require('../models/Page');
 const Message = require('../models/Message');
 const AutoReplyService = require('../services/autoReplyService');
 
-// Telegram sends to /webhook/telegram/:botToken
+// GET /webhook/telegram — health check / verification
+router.get('/', (req, res) => {
+  res.json({ status: 'ok', platform: 'telegram', webhook: 'active' });
+});
+
+// GET /webhook/telegram/:token — verify webhook is set
+router.get('/:token', (req, res) => {
+  res.json({ status: 'ok', platform: 'telegram', webhook: 'active', message: 'Webhook endpoint ready. Use POST to send updates.' });
+});
+
+// POST /webhook/telegram/:token — receive updates from Telegram
 router.post('/:token', async (req, res) => {
   res.sendStatus(200);
   try {
