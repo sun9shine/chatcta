@@ -2,10 +2,10 @@ const router = require('express').Router();
 const PlatformConfig = require('../models/PlatformConfig');
 const { auth, adminOnly } = require('../middleware/auth');
 
-// Get all platform configs (public - only enabled status)
+// Get all platform configs (public - enabled status + appId for OAuth)
 router.get('/', async (req, res) => {
   try {
-    const platforms = await PlatformConfig.find().select('platform isEnabled');
+    const platforms = await PlatformConfig.find().select('platform isEnabled appId');
     res.json(platforms);
   } catch (err) {
     res.status(500).json({ error: err.message });
