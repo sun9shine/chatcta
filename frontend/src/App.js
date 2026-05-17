@@ -51,6 +51,7 @@ import AdminCredentials from './pages/admin/AdminCredentials';
 import AdminTemplates from './pages/admin/AdminTemplates';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminSubscriptions from './pages/admin/AdminSubscriptions';
+import AdminPayments from './pages/admin/AdminPayments';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -120,6 +121,7 @@ const AppRoutes = () => {
         <Route path="data-export" element={<AdminDataExport />} />
         <Route path="templates" element={<AdminTemplates />} />
         <Route path="ai-settings" element={<AISettings />} />
+        <Route path="payments" element={<AdminPayments />} />
         <Route path="credentials" element={<AdminCredentials />} />
       </Route>
 

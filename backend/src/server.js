@@ -56,6 +56,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/translate', require('./routes/translate'));
 app.use('/api/posts', require('./routes/posts'));
 app.use('/api/ai-settings', require('./routes/aiSettings'));
+app.use('/api/payments', require('./routes/payments'));
 
 // ─── Webhooks ─────────────────────────────────────────
 app.use('/webhook/facebook', require('./webhooks/facebook'));
@@ -63,6 +64,20 @@ app.use('/webhook/instagram', require('./webhooks/instagram'));
 app.use('/webhook/whatsapp', require('./webhooks/whatsapp'));
 app.use('/webhook/telegram', require('./webhooks/telegram'));
 app.use('/webhook/tiktok', require('./webhooks/tiktok'));
+
+// Payment webhooks (Stripe needs raw body, registered separately)
+app.use('/webhook/payment/stripe', require('express').raw({ type: 'application/json' }));
+app.post('/webhook/payment/stripe', async (req, res) => {
+  // Forward to payments route handler
+  const paymentsRouter = require('./routes/payments');
+  req.url = '/webhook/stripe';
+  paymentsRouter.handle(req, res);
+});
+app.post('/webhook/payment/paypal', async (req, res) => {
+  const paymentsRouter = require('./routes/payments');
+  req.url = '/webhook/paypal';
+  paymentsRouter.handle(req, res);
+});
 
 // GET /webhook — root health check (confirms webhooks are active)
 app.get('/webhook', (req, res) => {
