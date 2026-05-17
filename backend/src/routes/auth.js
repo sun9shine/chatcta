@@ -112,4 +112,29 @@ router.put('/change-password', auth, async (req, res) => {
   }
 });
 
+// Data deletion request (public - no auth needed)
+router.post('/request-deletion', async (req, res) => {
+  try {
+    const { email, reason } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    // Log the request (admin can see in support messages)
+    const SupportMessage = require('../models/SupportMessage');
+    const user = await User.findOne({ email });
+    if (user) {
+      const admin = await User.findOne({ role: 'admin' });
+      await SupportMessage.create({
+        from: user._id,
+        to: admin?._id,
+        subject: 'Data Deletion Request',
+        content: `User requested account deletion.\nEmail: ${email}\nReason: ${reason || 'Not provided'}`,
+        isAdminReply: false
+      });
+    }
+    // Always return success (don't reveal if email exists)
+    res.json({ message: 'Deletion request received. Will be processed within 30 days.' });
+  } catch (err) {
+    res.json({ message: 'Deletion request received.' });
+  }
+});
+
 module.exports = router;

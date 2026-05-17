@@ -142,6 +142,8 @@ export default function LandingPage() {
         <p>© 2024 ChatCTA. {isAr ? 'جميع الحقوق محفوظة' : 'All rights reserved'}.</p>
         <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 12 }}>
           <a href="/privacy" style={{ color: '#6366f1', textDecoration: 'none' }}>{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</a>
+          <a href="/terms" style={{ color: '#6366f1', textDecoration: 'none' }}>{isAr ? 'شروط الخدمة' : 'Terms of Service'}</a>
+          <a href="/data-deletion" style={{ color: '#6366f1', textDecoration: 'none' }}>{isAr ? 'حذف البيانات' : 'Data Deletion'}</a>
         </div>
       </footer>
     </div>
