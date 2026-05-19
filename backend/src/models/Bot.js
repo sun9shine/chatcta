@@ -38,6 +38,24 @@ const botSchema = new mongoose.Schema({
       order:          { type: Number,  default: 0 }
     }]
   }],
+  // ── Post-Comment DM rules ─────────────────────────────────────────
+  postCommentDMs: [{
+    isEnabled:  { type: Boolean, default: true },
+    pageId:     { type: mongoose.Schema.Types.ObjectId, ref: 'Page' },
+    postId:     { type: String },
+    keywords:   [{ type: String }],
+    matchAll:   { type: Boolean, default: false },
+    replies: [{
+      message:      { type: String, default: '' },
+      imageUrl:     { type: String, default: '' },
+      linkUrl:      { type: String, default: '' },
+      linkText:     { type: String, default: '' },
+      delayEnabled: { type: Boolean, default: false },
+      delay:        { type: Number, default: 0 },
+      isEnabled:    { type: Boolean, default: true },
+      order:        { type: Number, default: 0 }
+    }]
+  }],
   stats: {
     totalReplies: { type: Number, default: 0 },
     totalDMs: { type: Number, default: 0 },

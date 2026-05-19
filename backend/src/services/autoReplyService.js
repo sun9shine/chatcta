@@ -217,6 +217,9 @@ class AutoReplyService {
       }
 
       // Execute action
+      // Ensure stats object exists
+      if (!bot.stats) bot.stats = { totalReplies: 0, totalDMs: 0 };
+
       if (actionType === 'comment' && commentData.commentId) {
         await this.replyToComment(page, commentData.commentId, content);
         await Comment.findOneAndUpdate(
@@ -242,6 +245,12 @@ class AutoReplyService {
    */
   async processComment(pageDoc, commentData) {
     if (!pageDoc || !commentData) return;
+
+    // Validate page has access token before attempting any replies
+    if (!pageDoc.accessToken) {
+      console.warn(`[AutoReply] Page "${pageDoc.pageName || pageDoc.pageId}" has no accessToken — skipping`);
+      return;
+    }
 
     console.log(`[AutoReply] Processing event on ${pageDoc.platform} | page: ${pageDoc.pageName || pageDoc.pageId} | content: "${commentData.content?.slice(0, 50)}"`);
 
