@@ -20,6 +20,61 @@ const io = new Server(server, {
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: '*', credentials: true }));
 app.use(morgan('dev'));
+
+// Stripe webhook MUST be registered before express.json() to receive raw body
+app.post('/webhook/payment/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const PaymentGateway = require('./models/PaymentGateway');
+    const Payment = require('./models/Payment');
+    const Subscription = require('./models/Subscription');
+    const User = require('./models/User');
+
+    const sig = req.headers['stripe-signature'];
+    const gw = await PaymentGateway.findOne({ provider: 'stripe', isEnabled: true });
+    if (!gw || !gw.stripe.webhookSecret) return res.sendStatus(400);
+
+    const stripe = require('stripe')(gw.stripe.secretKey);
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, gw.stripe.webhookSecret);
+    } catch (err) {
+      console.error('[Stripe Webhook] Signature verification failed:', err.message);
+      return res.sendStatus(400);
+    }
+
+    console.log('[Stripe Webhook] Event:', event.type);
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const payment = await Payment.findById(session.metadata?.paymentId);
+      if (payment && payment.status === 'pending') {
+        payment.status = 'completed';
+        payment.paidAt = new Date();
+        payment.transactionId = session.payment_intent;
+        payment.providerData = session;
+        await payment.save();
+
+        const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+        await Subscription.findOneAndUpdate(
+          { userId: payment.userId },
+          { plan: payment.plan, status: 'active', startedAt: new Date(), expiresAt: payment.expiresAt || expiresAt },
+          { upsert: true }
+        );
+        await User.findByIdAndUpdate(payment.userId, { plan: payment.plan, planExpiresAt: payment.expiresAt || expiresAt });
+        if (global.io) global.io.to(payment.userId.toString()).emit('plan_upgraded', { plan: payment.plan });
+
+        gw.totalPayments += 1; gw.totalRevenue += payment.amount; gw.lastPaymentAt = new Date();
+        await gw.save();
+      }
+    }
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error('[Stripe Webhook] Error:', err.message);
+    res.sendStatus(500);
+  }
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
@@ -65,18 +120,45 @@ app.use('/webhook/whatsapp', require('./webhooks/whatsapp'));
 app.use('/webhook/telegram', require('./webhooks/telegram'));
 app.use('/webhook/tiktok', require('./webhooks/tiktok'));
 
-// Payment webhooks (Stripe needs raw body, registered separately)
-app.use('/webhook/payment/stripe', require('express').raw({ type: 'application/json' }));
-app.post('/webhook/payment/stripe', async (req, res) => {
-  // Forward to payments route handler
-  const paymentsRouter = require('./routes/payments');
-  req.url = '/webhook/stripe';
-  paymentsRouter.handle(req, res);
-});
+// PayPal webhook (after JSON middleware is fine for PayPal)
 app.post('/webhook/payment/paypal', async (req, res) => {
-  const paymentsRouter = require('./routes/payments');
-  req.url = '/webhook/paypal';
-  paymentsRouter.handle(req, res);
+  res.sendStatus(200);
+  try {
+    const PaymentGateway = require('./models/PaymentGateway');
+    const Payment = require('./models/Payment');
+    const Subscription = require('./models/Subscription');
+    const User = require('./models/User');
+
+    const body = req.body;
+    console.log('[PayPal Webhook] Event:', body.event_type);
+
+    if (body.event_type === 'PAYMENT.CAPTURE.COMPLETED' || body.event_type === 'CHECKOUT.ORDER.APPROVED') {
+      const orderId = body.resource?.id || body.resource?.supplementary_data?.related_ids?.order_id;
+      if (orderId) {
+        const payment = await Payment.findOne({ transactionId: orderId, status: 'pending' });
+        if (payment) {
+          payment.status = 'completed';
+          payment.paidAt = new Date();
+          payment.providerData = body;
+          await payment.save();
+
+          const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+          await Subscription.findOneAndUpdate(
+            { userId: payment.userId },
+            { plan: payment.plan, status: 'active', startedAt: new Date(), expiresAt: payment.expiresAt || expiresAt },
+            { upsert: true }
+          );
+          await User.findByIdAndUpdate(payment.userId, { plan: payment.plan, planExpiresAt: payment.expiresAt || expiresAt });
+          if (global.io) global.io.to(payment.userId.toString()).emit('plan_upgraded', { plan: payment.plan });
+
+          const gw = await PaymentGateway.findById(payment.gatewayId);
+          if (gw) { gw.totalPayments += 1; gw.totalRevenue += payment.amount; gw.lastPaymentAt = new Date(); await gw.save(); }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[PayPal Webhook] Error:', err.message);
+  }
 });
 
 // GET /webhook — root health check (confirms webhooks are active)

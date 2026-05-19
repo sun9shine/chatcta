@@ -39,10 +39,20 @@ class PublishService {
   }
 
   async _publishInstagram(page, content, imageUrl) {
-    if (imageUrl) {
-      const mediaResp = await axios.post(`https://graph.facebook.com/v18.0/${page.pageId}/media?image_url=${imageUrl}&caption=${encodeURIComponent(content)}&access_token=${page.accessToken}`);
-      await axios.post(`https://graph.facebook.com/v18.0/${page.pageId}/media_publish?creation_id=${mediaResp.data.id}&access_token=${page.accessToken}`);
+    if (!imageUrl) {
+      console.warn(`[PublishService] Instagram requires an image — skipping text-only post for page "${page.pageName}"`);
+      throw new Error('Instagram requires an image to publish');
     }
+    const mediaResp = await axios.post(
+      `https://graph.facebook.com/v18.0/${page.pageId}/media`,
+      { image_url: imageUrl, caption: content, access_token: page.accessToken },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    await axios.post(
+      `https://graph.facebook.com/v18.0/${page.pageId}/media_publish`,
+      { creation_id: mediaResp.data.id, access_token: page.accessToken },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   async _publishTelegram(page, content, imageUrl) {

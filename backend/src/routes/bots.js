@@ -47,6 +47,7 @@ router.put('/:id', async (req, res) => {
 router.put('/:id/toggle', async (req, res) => {
   try {
     const bot = await Bot.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!bot) return res.status(404).json({ error: 'Bot not found' });
     bot.isActive = !bot.isActive;
     await bot.save();
     res.json(bot);

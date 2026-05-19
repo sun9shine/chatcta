@@ -3,7 +3,7 @@ const Subscription = require('../models/Subscription');
 const User = require('../models/User');
 const { auth, adminOnly } = require('../middleware/auth');
 
-const PLANS = Subscription.statics?.PLANS || require('../models/Subscription').schema.statics.PLANS;
+const PLANS = Subscription.schema?.statics?.PLANS || {};
 
 // Get current user subscription
 router.get('/my', auth, async (req, res) => {
@@ -12,8 +12,7 @@ router.get('/my', auth, async (req, res) => {
     if (!sub) {
       sub = await Subscription.create({ userId: req.user._id, plan: 'free' });
     }
-    const planKey = require('../models/Subscription').statics;
-    res.json({ ...sub.toObject(), planDetails: require('../models/Subscription').schema.statics.PLANS?.[sub.plan] });
+    res.json({ ...sub.toObject(), planDetails: PLANS[sub.plan] || null });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -33,11 +33,14 @@ router.get('/users', async (req, res) => {
   try {
     const { page = 1, limit = 20, search, status, plan } = req.query;
     const query = { role: 'user' };
-    if (search) query.$or = [
-      { name: new RegExp(search, 'i') },
-      { email: new RegExp(search, 'i') },
-      { phone: new RegExp(search, 'i') }
-    ];
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { name: new RegExp(escaped, 'i') },
+        { email: new RegExp(escaped, 'i') },
+        { phone: new RegExp(escaped, 'i') }
+      ];
+    }
     if (status === 'banned') query.isBanned = true;
     if (status === 'active') query.isBanned = false;
     if (plan) query.plan = plan;

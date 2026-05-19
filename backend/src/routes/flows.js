@@ -51,6 +51,7 @@ router.put('/:id', async (req, res) => {
 router.put('/:id/toggle', async (req, res) => {
   try {
     const flow = await Flow.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!flow) return res.status(404).json({ error: 'Flow not found' });
     flow.isActive = !flow.isActive;
     await flow.save();
     res.json(flow);

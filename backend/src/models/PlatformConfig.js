@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const platformConfigSchema = new mongoose.Schema({
-  platform: { type: String, enum: ['facebook', 'instagram', 'whatsapp', 'telegram', 'tiktok'], unique: true },
+  platform: { type: String, enum: ['facebook', 'instagram', 'whatsapp', 'telegram', 'tiktok', 'payments'], unique: true },
   isEnabled: { type: Boolean, default: false },
   appId: { type: String },
   appSecret: { type: String },
