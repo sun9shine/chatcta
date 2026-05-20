@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../store/authStore';
 
 const API = process.env.REACT_APP_API_URL || '/api';
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isAr = i18n.language === 'ar';
   const [stats, setStats] = useState({});
   const [analytics, setAnalytics] = useState(null);
@@ -17,7 +19,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       axios.get(`${API}/users/stats`).then(r => setStats(r.data)),
       axios.get(`${API}/analytics/overview`).then(r => setAnalytics(r.data)),
       axios.get(`${API}/announcements`).then(r => setAnnouncements(r.data)),
@@ -41,13 +43,13 @@ export default function Dashboard() {
       </div>
 
       {/* Announcements */}
-      {announcements.filter(a => !a.readBy?.includes('me')).slice(0, 2).map(ann => (
+      {announcements.filter(a => !a.readBy?.includes(user?._id)).slice(0, 3).map(ann => (
         <div key={ann._id} style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12, padding: '14px 18px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <strong style={{ fontSize: 14 }}>{isAr && ann.titleAr ? ann.titleAr : ann.title}</strong>
             <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{isAr && ann.contentAr ? ann.contentAr : ann.content}</p>
           </div>
-          <button onClick={() => axios.put(`${API}/announcements/${ann._id}/read`)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 18 }}>✕</button>
+          <button onClick={() => { axios.put(`${API}/announcements/${ann._id}/read`); setAnnouncements(prev => prev.filter(a => a._id !== ann._id)); }} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 18 }}>✕</button>
         </div>
       ))}
 
